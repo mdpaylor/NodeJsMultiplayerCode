@@ -15,8 +15,6 @@ io.on("connection", (socket) => {
     console.log("Player has connected");
     connectedUsers++;
 
-    networkObjectMap[objectIdCount] = new NetworkObject(objectIdCount, "Player", {x: 0, y: 0, z: 0});
-
     socket.on("connection", (data) => {
         socket.emit("connection", {
             userNetworkId: connectedUsers,
@@ -24,7 +22,6 @@ io.on("connection", (socket) => {
         });
 
         if (connectedUsers > 1) {
-           console.log(objectIdCount);
             io.emit("spawnObject",
                 {
                     senderId: connectedUsers,
@@ -32,7 +29,12 @@ io.on("connection", (socket) => {
                     prefabReferenceName: "Player",
                     position: {x:0, y:1, z:0}
                 });
+
+            socket.emit("spawnScene", JSON.stringify(networkObjectMap));
         }
+
+        networkObjectMap[objectIdCount] = new NetworkObject("Player", {x:0, y:1, z:0});
+
         objectIdCount++;
     });
 
@@ -50,16 +52,19 @@ io.on("connection", (socket) => {
         objectIdCount++;
     });
 
+    // Updates positions of objects client side and server side
     socket.on("updatePositions", (data) => {
         const parsedData = JSON.parse(data);
-        console.log("Updating positions: "+ parsedData.senderId);
-
-        //console.log(data); // Validate
 
         io.emit("updatePositions",
             {
                 data: data
             });
+
+        for (const networkObject of parsedData.objects) {
+            let position = networkObject.position;
+            networkObjectMap[networkObject.networkId].positionVector = {x:position.x, y:position.y, z:position.z};
+        }
     });
 
     socket.on("disconnect", () => {
@@ -69,8 +74,7 @@ io.on("connection", (socket) => {
 });
 
 class NetworkObject {
-    constructor(id, prefabName, positionVector) {
-        this.id = id;
+    constructor(prefabName, positionVector) {
         this.prefabName = prefabName;
         this.positionVector = positionVector;
     }
