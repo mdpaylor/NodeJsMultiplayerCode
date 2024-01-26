@@ -22,18 +22,19 @@ io.on("connection", (socket) => {
         });
 
         if (connectedUsers > 1) {
-            io.emit("spawnObject",
+            socket.broadcast.emit("spawnObject",
                 {
                     senderId: connectedUsers,
                     networkId: objectIdCount,
                     prefabReferenceName: "Player",
-                    position: {x:0, y:1, z:0}
+                    position: {x:0, y:1, z:0},
+                    rotation: {x:0, y:0, z:0}
                 });
 
             socket.emit("spawnScene", JSON.stringify(networkObjectMap));
         }
 
-        networkObjectMap[objectIdCount] = new NetworkObject("Player", {x:0, y:1, z:0});
+        networkObjectMap[objectIdCount] = new NetworkGameObject("Player", {x:0, y:1, z:0}, {x:0, y:0, z:0});
 
         objectIdCount++;
     });
@@ -46,8 +47,15 @@ io.on("connection", (socket) => {
                 senderId: parsedData.senderId,
                 networkId: objectIdCount,
                 prefabReferenceName: parsedData.prefabReferenceName,
-                position: parsedData.position
+                position: parsedData.position,
+                rotation: parsedData.rotation
             });
+
+        let positionJson = parsedData.position;
+        let rotationJson = parsedData.rotation;
+        let positionVector = {x:positionJson.x, y:positionJson.y, z:positionJson.z};
+        let rotationVector = {x:rotationJson.x, y:rotationJson.y, z:rotationJson.z};
+        networkObjectMap[objectIdCount] = new NetworkGameObject(parsedData.prefabReferenceName, positionVector, rotationVector);
 
         objectIdCount++;
     });
@@ -56,14 +64,16 @@ io.on("connection", (socket) => {
     socket.on("updatePositions", (data) => {
         const parsedData = JSON.parse(data);
 
-        io.emit("updatePositions",
+        socket.broadcast.emit("updatePositions",
             {
                 data: data
             });
 
         for (const networkObject of parsedData.objects) {
             let position = networkObject.position;
+            let rotation = networkObject.rotation;
             networkObjectMap[networkObject.networkId].positionVector = {x:position.x, y:position.y, z:position.z};
+            networkObjectMap[networkObject.networkId].rotationVector = {x:rotation.x, y:rotation.y, z:rotation.z};
         }
     });
 
@@ -73,9 +83,10 @@ io.on("connection", (socket) => {
     });
 });
 
-class NetworkObject {
-    constructor(prefabName, positionVector) {
+class NetworkGameObject {
+    constructor(prefabName, positionVector, rotationVector) {
         this.prefabName = prefabName;
         this.positionVector = positionVector;
+        this.rotationVector = rotationVector;
     }
 }
