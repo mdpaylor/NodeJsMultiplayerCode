@@ -19,8 +19,6 @@ http.listen(3000, () => {
 });
 
 io.on("connection", (socket) => {
-
-    console.log("I'M HERE");
     connectedUsers++;
 
     socket.on("connection", (data) => {
@@ -107,6 +105,8 @@ io.on("connection", (socket) => {
     socket.on("disconnectClient", (data) => {
         const parsedData = JSON.parse(data);
 
+        delete networkObjectMap[parsedData.objectNetworkId];
+
         if (Number(parsedData.senderId) === userIdCounter-1) {
             userIdCounter--;
             adjustUserIdCounter();
@@ -126,9 +126,6 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
        console.log("Player has disconnected");
-
-       console.log(networkObjectMap);
-
        connectedUsers--;
     });
 });
@@ -177,7 +174,6 @@ function adjustUserIdCounter() {
 
         while (!parentQueue.isEmpty()) {
             let val = parentQueue.deq();
-            console.log("Comparison: val="+ val +", userIdCounter="+ userIdCounter)
             if (val === userIdCounter) {
                 userIdCounter--;
                 redo = true;
