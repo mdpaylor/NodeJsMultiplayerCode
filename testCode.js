@@ -141,7 +141,6 @@ function adjustObjectIdCounter() {
 
         while (!parentQueue.isEmpty()) {
             let val = parentQueue.deq();
-            console.log("Comparison: val="+ val +", userIdCounter="+ userIdCounter)
             if (val === objectIdCount) {
                 objectIdCount--;
 
