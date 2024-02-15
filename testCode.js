@@ -102,6 +102,21 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("reportStoppedPosition", (data) => {
+        const parsedData = JSON.parse(data);
+
+        socket.broadcast.emit("reportStoppedPosition",
+            {
+                data: data
+            });
+
+        let position = parsedData.position;
+        let rotation = parsedData.rotation;
+        networkObjectMap[parsedData.networkId].positionVector = {x:position.x, y:position.y, z:position.z};
+        networkObjectMap[parsedData.networkId].rotationVector = {x:rotation.x, y:rotation.y, z:rotation.z};
+
+    });
+
     socket.on("disconnectClient", (data) => {
         const parsedData = JSON.parse(data);
 
