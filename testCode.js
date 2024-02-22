@@ -118,6 +118,11 @@ io.on("connection", (socket) => {
     socket.on("disconnectClient", (data) => {
         const parsedData = JSON.parse(data);
 
+        socket.broadcast.emit("deleteObject",
+            {
+                id: parsedData.objectNetworkId
+            })
+
         delete networkObjectMap[parsedData.objectNetworkId];
 
         if (Number(parsedData.senderId) === userIdCounter-1) {
