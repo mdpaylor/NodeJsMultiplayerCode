@@ -42,8 +42,8 @@ io.on("connection", (socket) => {
                     senderId: chosenUserId,
                     networkId: chosenNetworkId,
                     prefabReferenceName: "Player",
-                    position: {x:0, y:1, z:0},
-                    rotation: {x:0, y:0, z:0}
+                    position: {x:-0.04657826, y:4.768372e-07, z:-0.07017983},
+                    rotation: {x:0, y:180, z:0}
                 });
 
             socket.emit("spawnScene", JSON.stringify(networkObjectMap));
@@ -91,8 +91,6 @@ io.on("connection", (socket) => {
             {
                 data: data
             });
-
-        // console.log(data);
 
         for (const networkObject of parsedData.objects) {
             let position = networkObject.position;
