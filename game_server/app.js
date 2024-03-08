@@ -26,6 +26,15 @@ io.on("connection", (socket) => {
 
         console.log("Player has connected");
 
+        if (connectedUsers == 1) {
+            availableUserIdQueue = new PriorityQueue((a,b) => a-b);
+            availableObjectIdQueue = new PriorityQueue((a,b) => a-b);
+            networkObjectMap = {};
+            userSocketIdMap = {}
+            networkHostId = -1;
+            userIdCounter = 1;
+        }
+
         let chosenUserId = userIdCounter;
         if (!availableUserIdQueue.isEmpty()) chosenUserId = availableUserIdQueue.deq();
 
@@ -150,7 +159,6 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
        console.log("Player has disconnected");
-       connectedUsers--;
 
        if (socket.id in userSocketIdMap) {
            let userObject = userSocketIdMap[socket.id];
@@ -176,6 +184,8 @@ io.on("connection", (socket) => {
 });
 
 function disconnectClient(socket, data) {
+    connectedUsers--;
+
     const parsedData = JSON.parse(data);
 
     console.log(data);
@@ -224,6 +234,8 @@ function disconnectClient(socket, data) {
     }
 
     delete userSocketIdMap[socket.id];
+
+    console.log("Finished disconnection code!");
 }
 
 
