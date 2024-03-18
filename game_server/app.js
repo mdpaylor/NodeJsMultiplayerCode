@@ -16,7 +16,7 @@ let userSocketIdMap = {}
 let networkHostId = -1;
 
 http.listen(3000, () => {
-   console.log("Server listening on port 3000");
+    console.log("Server listening on port 3000");
 });
 
 io.on("connection", (socket) => {
@@ -101,6 +101,19 @@ io.on("connection", (socket) => {
         else adjustObjectIdCounter();
     });
 
+    socket.on("respawnSelf", (data) => {
+        const parsedData = JSON.parse(data);
+
+        socket.broadcast.emit("respawnSelf", {
+            data: data
+        });
+
+        let positionVector = parsedData.positionVector;
+        let rotationVector = parsedData.rotationVector;
+
+        networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
+    });
+
     // Updates positions of objects client side and server side
     socket.on("updatePositions", (data) => {
         const parsedData = JSON.parse(data);
@@ -158,19 +171,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-       console.log("Player has disconnected");
+        console.log("Player has disconnected");
 
-       if (socket.id in userSocketIdMap) {
-           let userObject = userSocketIdMap[socket.id];
-           let json = {
-               "objectNetworkId": userObject.objectNetworkId,
-               "senderId": userObject.userNetworkId
-           };
+        if (socket.id in userSocketIdMap) {
+            let userObject = userSocketIdMap[socket.id];
+            let json = {
+                "objectNetworkId": userObject.objectNetworkId,
+                "senderId": userObject.userNetworkId
+            };
 
-           disconnectClient(socket, JSON.stringify(json));
+            disconnectClient(socket, JSON.stringify(json));
 
-           delete userSocketIdMap[socket.id];
-       }
+            delete userSocketIdMap[socket.id];
+        }
 
         if (connectedUsers <= 0) {
             objectIdCount = 0;
