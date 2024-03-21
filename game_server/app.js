@@ -76,6 +76,23 @@ io.on("connection", (socket) => {
         else adjustObjectIdCounter();
     });
 
+    socket.on("idCorrection", (data) => {
+        const parsedData = JSON.parse(data);
+
+        if (!networkObjectMap.hasOwnProperty(parsedData.previousId)){
+            socket.emit("correctObjectMap", JSON.stringify(networkObjectMap));
+        }
+        else {
+            networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
+            delete networkObjectMap[parsedData.previousId];
+
+            socket.broadcast.emit("correctId", {
+                previousId: parsedData.previousId,
+                newId: parsedData.newId
+            });
+        }
+    });
+
     socket.on("spawnObject", (data) => {
         const parsedData = JSON.parse(data);
 
