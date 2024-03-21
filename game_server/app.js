@@ -118,6 +118,14 @@ io.on("connection", (socket) => {
         else adjustObjectIdCounter();
     });
 
+    socket.on("sendJump", (data) => {
+        const parsedData = JSON.parse(data);
+
+        socket.broadcast.emit("sendJump", {
+            data: data
+        });
+    });
+
     socket.on("respawnSelf", (data) => {
         const parsedData = JSON.parse(data);
 
