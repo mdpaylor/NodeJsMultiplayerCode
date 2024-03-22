@@ -90,6 +90,11 @@ io.on("connection", (socket) => {
             if (Object.hasOwnProperty.call(networkObjectMap, parsedData.previousId)) {
                 networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
                 delete networkObjectMap[parsedData.previousId];
+
+                socket.broadcast.emit("correctId", {
+                    previousId: parsedData.previousId,
+                    newId: parsedData.newId
+                });
             }
             else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
                 socket.emit("deleteObject",
@@ -106,11 +111,6 @@ io.on("connection", (socket) => {
                     rotation: parsedData.rotation
                 });
             }
-
-            socket.broadcast.emit("correctId", {
-                previousId: parsedData.previousId,
-                newId: parsedData.newId
-            });
         }
     });
 
