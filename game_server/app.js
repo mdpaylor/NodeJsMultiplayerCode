@@ -64,9 +64,11 @@ io.on("connection", (socket) => {
                 });
 
             socket.emit("spawnScene", JSON.stringify(networkObjectMap));
+            console.log("spawning scene");
+            printNetworkObjectMap();
         }
 
-        networkObjectMap[objectIdCount] = new NetworkGameObject("Player", {x:-0.04657826, y:4.768372e-07, z:-0.07017983}, {x:0, y:180, z:0});
+        networkObjectMap[chosenNetworkId] = new NetworkGameObject("Player", {x:-0.04657826, y:4.768372e-07, z:-0.07017983}, {x:0, y:180, z:0});
         userSocketIdMap[socket.id] = new UserObject(chosenUserId, chosenNetworkId);
 
         if (chosenUserId === userIdCounter) userIdCounter++;
@@ -77,14 +79,33 @@ io.on("connection", (socket) => {
     });
 
     socket.on("idCorrection", (data) => {
+        console.log("Correcting ID");
         const parsedData = JSON.parse(data);
 
         if (!networkObjectMap.hasOwnProperty(parsedData.previousId)){
             socket.emit("correctObjectMap", JSON.stringify(networkObjectMap));
+            console.log("Sending user correct object map");
         }
         else {
-            networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
-            delete networkObjectMap[parsedData.previousId];
+            if (Object.hasOwnProperty.call(networkObjectMap, parsedData.previousId)) {
+                networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
+                delete networkObjectMap[parsedData.previousId];
+            }
+            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
+                socket.emit("deleteObject",
+                    {
+                        id: parsedData.newId
+                    });
+            }
+            else {
+                io.emit("spawnObject", {
+                    senderId: parsedData.senderId,
+                    networkId: parsedData.newId,
+                    prefabReferenceName: parsedData.type,
+                    position: parsedData.position,
+                    rotation: parsedData.rotation
+                });
+            }
 
             socket.broadcast.emit("correctId", {
                 previousId: parsedData.previousId,
@@ -93,7 +114,16 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on("deleteObject", (data) => {
+        const parsedData = JSON.parse(data);
+
+        socket.broadcast.emit("deleteObject", {
+            id: parsedData.id
+        });
+    });
+
     socket.on("spawnObject", (data) => {
+        console.log("Spawning Network Object")
         const parsedData = JSON.parse(data);
 
         let chosenNetworkId = objectIdCount;
@@ -112,21 +142,21 @@ io.on("connection", (socket) => {
         let rotationJson = parsedData.rotation;
         let positionVector = {x:positionJson.x, y:positionJson.y, z:positionJson.z};
         let rotationVector = {x:rotationJson.x, y:rotationJson.y, z:rotationJson.z};
-        networkObjectMap[objectIdCount] = new NetworkGameObject(parsedData.prefabReferenceName, positionVector, rotationVector);
+        networkObjectMap[chosenNetworkId] = new NetworkGameObject(parsedData.prefabReferenceName, positionVector, rotationVector);
 
         if (chosenNetworkId === objectIdCount) objectIdCount++;
         else adjustObjectIdCounter();
     });
 
     socket.on("sendJump", (data) => {
-        const parsedData = JSON.parse(data);
-
         socket.broadcast.emit("sendJump", {
             data: data
         });
     });
 
     socket.on("respawnSelf", (data) => {
+        console.log("Respawning client on network")
+
         const parsedData = JSON.parse(data);
 
         socket.broadcast.emit("respawnSelf", {
@@ -231,7 +261,7 @@ function disconnectClient(socket, data) {
     socket.broadcast.emit("deleteObject",
         {
             id: parsedData.objectNetworkId
-        })
+        });
 
     delete networkObjectMap[parsedData.objectNetworkId];
 
@@ -335,6 +365,20 @@ function adjustUserIdCounter() {
         }
     }
     availableUserIdQueue = tmpQueue;
+}
+
+function printNetworkObjectMap() {
+    for (const key in networkObjectMap) {
+        console.log(key +": "+ networkObjectMap[key].prefabName);
+    }
+}
+
+function findNumberOfPlayerObjectsInScene() {
+    let count = 0;
+    for (const key in networkObjectMap) {
+        if (networkObjectMap[key].prefabName === "Player") count++;
+    }
+    return count;
 }
 
 class NetworkGameObject {
