@@ -24,7 +24,7 @@ io.on("connection", (socket) => {
 
     socket.on("connection", (data) => {
 
-        console.log("Player has connected");
+        console.log("Player has connected. Connected Users: "+ connectedUsers);
 
         if (connectedUsers == 1) {
             availableUserIdQueue = new PriorityQueue((a,b) => a-b);
@@ -167,6 +167,7 @@ io.on("connection", (socket) => {
         let rotationVector = parsedData.rotationVector;
 
         networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
+        printNetworkObjectMap();
     });
 
     // Updates positions of objects client side and server side
@@ -263,7 +264,9 @@ function disconnectClient(socket, data) {
             id: parsedData.objectNetworkId
         });
 
-    delete networkObjectMap[parsedData.objectNetworkId];
+    if (parsedData.objectNetworkId in  networkObjectMap) {
+        delete networkObjectMap[parsedData.objectNetworkId];
+    }
 
     if (Number(parsedData.senderId) === userIdCounter-1) {
         userIdCounter--;
