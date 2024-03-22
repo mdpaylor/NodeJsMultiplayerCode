@@ -25,6 +25,7 @@ io.on("connection", (socket) => {
     socket.on("connection", (data) => {
 
         console.log("Player has connected. Connected Users: "+ connectedUsers);
+        console.log("Number of sockets in map: "+ Object.keys(userSocketIdMap).length);
 
         if (connectedUsers == 1) {
             availableUserIdQueue = new PriorityQueue((a,b) => a-b);
@@ -86,8 +87,7 @@ io.on("connection", (socket) => {
             socket.emit("correctObjectMap", JSON.stringify(networkObjectMap));
             console.log("Sending user correct object map");
         }
-        else {
-            if (Object.hasOwnProperty.call(networkObjectMap, parsedData.previousId)) {
+        else /*{if (networkObjectMap.hasOwnProperty(parsedData.previousId))*/ {
                 networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
                 delete networkObjectMap[parsedData.previousId];
 
@@ -95,8 +95,8 @@ io.on("connection", (socket) => {
                     previousId: parsedData.previousId,
                     newId: parsedData.newId
                 });
-            }
-            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
+            //}
+/*            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
                 socket.emit("deleteObject",
                     {
                         id: parsedData.newId
@@ -110,7 +110,7 @@ io.on("connection", (socket) => {
                     position: parsedData.position,
                     rotation: parsedData.rotation
                 });
-            }
+            }*/
         }
     });
 
@@ -159,6 +159,8 @@ io.on("connection", (socket) => {
 
         const parsedData = JSON.parse(data);
 
+        connectedUsers--;
+
         socket.broadcast.emit("respawnSelf", {
             data: data
         });
@@ -166,7 +168,14 @@ io.on("connection", (socket) => {
         let positionVector = parsedData.positionVector;
         let rotationVector = parsedData.rotationVector;
 
-        networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
+        if (!networkObjectMap.hasOwnProperty(parsedData.objectId)) {
+            networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
+        }
+        else {
+            networkObjectMap[parsedData.objectId].positionVector = {x:positionVector.x, y: positionVector.y, z:positionVector.z};
+            networkObjectMap[parsedData.objectId].rotationVector = {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z};
+        }
+
         printNetworkObjectMap();
     });
 
