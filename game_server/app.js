@@ -88,29 +88,29 @@ io.on("connection", (socket) => {
             console.log("Sending user correct object map");
         }
         else /*{if (networkObjectMap.hasOwnProperty(parsedData.previousId))*/ {
-                networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
-                delete networkObjectMap[parsedData.previousId];
+            networkObjectMap[parsedData.newId] = networkObjectMap[parsedData.previousId];
+            delete networkObjectMap[parsedData.previousId];
 
-                socket.broadcast.emit("correctId", {
-                    previousId: parsedData.previousId,
-                    newId: parsedData.newId
-                });
+            socket.broadcast.emit("correctId", {
+                previousId: parsedData.previousId,
+                newId: parsedData.newId
+            });
             //}
-/*            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
-                socket.emit("deleteObject",
-                    {
-                        id: parsedData.newId
-                    });
-            }
-            else {
-                io.emit("spawnObject", {
-                    senderId: parsedData.senderId,
-                    networkId: parsedData.newId,
-                    prefabReferenceName: parsedData.type,
-                    position: parsedData.position,
-                    rotation: parsedData.rotation
-                });
-            }*/
+            /*            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
+                            socket.emit("deleteObject",
+                                {
+                                    id: parsedData.newId
+                                });
+                        }
+                        else {
+                            io.emit("spawnObject", {
+                                senderId: parsedData.senderId,
+                                networkId: parsedData.newId,
+                                prefabReferenceName: parsedData.type,
+                                position: parsedData.position,
+                                rotation: parsedData.rotation
+                            });
+                        }*/
         }
     });
 
@@ -150,6 +150,13 @@ io.on("connection", (socket) => {
 
     socket.on("sendJump", (data) => {
         socket.broadcast.emit("sendJump", {
+            data: data
+        });
+    });
+
+    socket.on("sendShootingObjects", (data) =>
+    {
+        socket.broadcast.emit("sendShootingObjects", {
             data: data
         });
     });
