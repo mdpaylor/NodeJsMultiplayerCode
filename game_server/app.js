@@ -27,7 +27,7 @@ io.on("connection", (socket) => {
         console.log("Player has connected. Connected Users: "+ connectedUsers);
         console.log("Number of sockets in map: "+ Object.keys(userSocketIdMap).length);
 
-        if (connectedUsers == 1) {
+        if (connectedUsers <= 1) {
             availableUserIdQueue = new PriorityQueue((a,b) => a-b);
             availableObjectIdQueue = new PriorityQueue((a,b) => a-b);
             networkObjectMap = {};
