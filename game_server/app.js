@@ -115,11 +115,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("deleteObject", (data) => {
-        const parsedData = JSON.parse(data);
+        try {
+            const parsedData = JSON.parse(data);
 
-        socket.broadcast.emit("deleteObject", {
-            id: parsedData.id
-        });
+            socket.broadcast.emit("deleteObject", {
+                id: parsedData.id
+            });
+        } catch (Exception) {}
     });
 
     socket.on("spawnObject", (data) => {
@@ -183,14 +185,16 @@ io.on("connection", (socket) => {
             networkObjectMap[parsedData.objectId].rotationVector = {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z};
         }
 
+
+
         printNetworkObjectMap();
     });
 
     // Updates positions of objects client side and server side
-    socket.on("updatePositions", (data) => {
+    socket.on("updatePlayerPositions", (data) => {
         const parsedData = JSON.parse(data);
 
-        socket.broadcast.emit("updatePositions",
+        socket.broadcast.emit("updatePlayerPositions",
             {
                 data: data
             });
@@ -209,7 +213,31 @@ io.on("connection", (socket) => {
                     y: rotation.y,
                     z: rotation.z
                 };
+            } catch(Exception){}
+        }
+    });
 
+    socket.on("updateEnemyData", (data) => {
+        const parsedData = JSON.parse(data);
+
+        socket.broadcast.emit("updateEnemyData", {
+            data: data
+        });
+
+        for (const networkObject in parsedData.objects) {
+            let position = networkObject.position;
+            let rotation = networkObject.rotation;
+            try {
+                networkObjectMap[networkObject.networkId].positionVector = {
+                    x: position.x,
+                    y: position.y,
+                    z: position.z
+                };
+                networkObjectMap[networkObject.networkId].rotationVector = {
+                    x: rotation.x,
+                    y: rotation.y,
+                    z: rotation.z
+                };
             } catch(Exception){}
         }
     });
@@ -279,6 +307,7 @@ function disconnectClient(socket, data) {
         {
             id: parsedData.objectNetworkId
         });
+    socket.broadcast.emit("disconnectOtherPlayer", "");
 
     if (parsedData.objectNetworkId in  networkObjectMap) {
         delete networkObjectMap[parsedData.objectNetworkId];
