@@ -178,6 +178,8 @@ io.on("connection", (socket) => {
         let chosenObjectId = parsedData.objectId;
         let chosenUserId = parsedData.senderId;
         if (!networkObjectMap.hasOwnProperty(parsedData.objectId)) {
+            console.log("Making new object in network map");
+
             networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
 
             socket.broadcast.emit("respawnSelf", {
@@ -185,6 +187,8 @@ io.on("connection", (socket) => {
             });
         }
         else if (networkObjectMap[parsedData.objectId].prefabName === "Player" && playerObjectHasMatchingSocket(parsedData.objectId, parsedData.senderId)){
+            console.log("Modifying object in network map");
+
             networkObjectMap[parsedData.objectId].positionVector = {x:positionVector.x, y: positionVector.y, z:positionVector.z};
             networkObjectMap[parsedData.objectId].rotationVector = {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z};
 
@@ -193,6 +197,8 @@ io.on("connection", (socket) => {
             });
         }
         else {
+            console.log("Correcting ID and making new object in map");
+
             chosenObjectId = objectIdCount;
             if (!availableObjectIdQueue.isEmpty()) {
                 chosenObjectId = availableObjectIdQueue.deq();
@@ -233,6 +239,8 @@ io.on("connection", (socket) => {
         userSocketIdMap[socket.id] = new UserObject(chosenUserId, chosenObjectId);
 
         printNetworkObjectMap();
+
+        console.log("Finished reconnection code");
     });
 
     // Updates positions of objects client side and server side
@@ -463,8 +471,12 @@ function adjustUserIdCounter() {
 function playerObjectHasMatchingSocket(objectId, senderId) {
     for (let socketId in userSocketIdMap) {
         let socketObject = userSocketIdMap[socketId];
-        if (socketObject.objectNetworkId == objectId && socketObject.userNetworkId == senderId) return true;
+        if (socketObject.objectNetworkId == objectId && socketObject.userNetworkId == senderId){
+            console.log("Returning true from socket match test");
+            return true;
+        }
     }
+    console.log("Returning false from socket match test");
     return false;
 }
 
