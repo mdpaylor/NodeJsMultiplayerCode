@@ -20,9 +20,11 @@ http.listen(3000, () => {
 });
 
 io.on("connection", (socket) => {
-    connectedUsers++;
+
+    console.log(socket.id);
 
     socket.on("connection", (data) => {
+        connectedUsers++;
 
         console.log("Player has connected. Connected Users: "+ connectedUsers);
         console.log("Number of sockets in map: "+ Object.keys(userSocketIdMap).length);
@@ -168,24 +170,67 @@ io.on("connection", (socket) => {
 
         const parsedData = JSON.parse(data);
 
-        connectedUsers--;
-
-        socket.broadcast.emit("respawnSelf", {
-            data: data
-        });
+        connectedUsers++;
 
         let positionVector = parsedData.positionVector;
         let rotationVector = parsedData.rotationVector;
 
+        let chosenObjectId = parsedData.objectId;
+        let chosenUserId = parsedData.senderId;
         if (!networkObjectMap.hasOwnProperty(parsedData.objectId)) {
             networkObjectMap[parsedData.objectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
+
+            socket.broadcast.emit("respawnSelf", {
+                data: data
+            });
         }
-        else {
+        else if (networkObjectMap[parsedData.objectId].prefabName === "Player" && playerObjectHasMatchingSocket(parsedData.objectId, parsedData.senderId)){
             networkObjectMap[parsedData.objectId].positionVector = {x:positionVector.x, y: positionVector.y, z:positionVector.z};
             networkObjectMap[parsedData.objectId].rotationVector = {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z};
+
+            socket.broadcast.emit("respawnSelf", {
+                data: data
+            });
+        }
+        else {
+            chosenObjectId = objectIdCount;
+            if (!availableObjectIdQueue.isEmpty()) {
+                chosenObjectId = availableObjectIdQueue.deq();
+            }
+            else objectIdCount++;
+
+            socket.broadcast.emit("respawnSelf", {
+                data: {
+                    senderId: parsedData.senderId,
+                    objectId: chosenObjectId,
+                    connectedPlayers: connectedUsers,
+                    positionVector: {x:positionVector.x, y: positionVector.y, z:positionVector.z},
+                    rotationVector: {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z}
+                }
+            });
+
+            networkObjectMap[chosenObjectId] = new NetworkGameObject("Player", {x:positionVector.x, y: positionVector.y, z:positionVector.z}, {x:rotationVector.x, y: rotationVector.y, z:rotationVector.z});
         }
 
+        for (let socketId in userSocketIdMap) {
+            if (userSocketIdMap[socketId].userNetworkId == parsedData.senderId) {
+                chosenUserId = userIdCounter;
+                if (!availableUserIdQueue.isEmpty()) {
+                    chosenUserId = availableUserIdQueue.deq();
+                }
+                else userIdCounter++;
+            }
+        }
 
+        if (chosenUserId != parsedData.senderId || chosenObjectId != parsedData.objectId) {
+            socket.emit("correctUserId", {
+                userId: chosenUserId,
+                previousId: parsedData.objectId,
+                newId: chosenObjectId
+            });
+        }
+
+        userSocketIdMap[socket.id] = new UserObject(chosenUserId, chosenObjectId);
 
         printNetworkObjectMap();
     });
@@ -413,6 +458,14 @@ function adjustUserIdCounter() {
         }
     }
     availableUserIdQueue = tmpQueue;
+}
+
+function playerObjectHasMatchingSocket(objectId, senderId) {
+    for (let socketId in userSocketIdMap) {
+        let socketObject = userSocketIdMap[socketId];
+        if (socketObject.objectNetworkId == objectId && socketObject.userNetworkId == senderId) return true;
+    }
+    return false;
 }
 
 function printNetworkObjectMap() {
