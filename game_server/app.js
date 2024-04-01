@@ -94,7 +94,11 @@ io.on("connection", (socket) => {
 
         const parsedData = JSON.parse(data);
 
+        console.log("Before Added socket map entry:\n"+ userSocketIdMap);
+
         userSocketIdMap[socket.id] = new UserObject(parsedData.userNetworkId, parsedData.objectNetworkId);
+
+        console.log("Added socket map entry:\n"+ userSocketIdMap);
     });
 
     socket.on("idCorrection", (data) => {
@@ -372,8 +376,6 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        console.log("Player has disconnected");
-
         if (userSocketIdMap.hasOwnProperty(socket.id)) {
             let userObject = userSocketIdMap[socket.id];
             let json = {
@@ -387,10 +389,15 @@ io.on("connection", (socket) => {
 });
 
 function disconnectClient(socket, data) {
-    if (!userSocketIdMap.hasOwnProperty(socket.id )) return;
+    console.log("Disconnection ID"+ socket.id);
+    console.log("socketID Map: "+ userSocketIdMap);
+    if (!userSocketIdMap.hasOwnProperty(socket.id)) {
+        console.log("Did not find ID for disconnection");
+        return;
+    }
 
     connectedUsers--;
-    console.log("Connected Users: "+ connectedUsers);
+    console.log("Connected Users after Disconnection: "+ connectedUsers);
 
     const parsedData = JSON.parse(data);
 
@@ -458,6 +465,7 @@ function disconnectClient(socket, data) {
         networkHostId = -1;
     }
 
+    console.log("Player has disconnected");
     console.log("Finished disconnection code!");
 }
 
