@@ -413,8 +413,15 @@ function disconnectClient(socket, data) {
         availableObjectIdQueue.enq(Number(parsedData.objectNetworkId));
     }
 
-    if (socket.id in userSocketIdMap) {
+    if (userSocketIdMap.hasOwnProperty(socket.id)) {
         delete userSocketIdMap[socket.id];
+    }
+    else {
+        for (let key in userSocketIdMap) {
+            if (userSocketIdMap[key].userNetworkId == data.senderId){
+                delete userSocketIdMap[key];
+            }
+        }
     }
 
     if (connectedUsers > 0 && networkHostId == parsedData.senderId) {
