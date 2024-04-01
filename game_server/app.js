@@ -438,6 +438,13 @@ function disconnectClient(socket, data) {
                 isHost: true
             });
         }
+        else {
+            networkHostId = 1;
+            io.emit("setHost", {
+                userNetworkId: networkHostId,
+                isHost: true
+            })
+        }
     }
 
     delete userSocketIdMap[socket.id];
