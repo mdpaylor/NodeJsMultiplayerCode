@@ -85,6 +85,8 @@ io.on("connection", (socket) => {
         console.log("Refreshing connection");
 
         delete userSocketIdMap[socket.id];
+
+        socket.disconnect(true);
     });
 
     socket.on("setPersonalIds", (data) => {
