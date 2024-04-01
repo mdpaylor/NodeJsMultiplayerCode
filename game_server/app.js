@@ -132,6 +132,7 @@ io.on("connection", (socket) => {
 
         let chosenNetworkId = objectIdCount;
         if (!availableObjectIdQueue.isEmpty()) chosenNetworkId = availableObjectIdQueue.deq();
+        else objectIdCount++;
 
         io.emit("spawnObject",
             {
@@ -147,9 +148,6 @@ io.on("connection", (socket) => {
         let positionVector = {x:positionJson.x, y:positionJson.y, z:positionJson.z};
         let rotationVector = {x:rotationJson.x, y:rotationJson.y, z:rotationJson.z};
         networkObjectMap[chosenNetworkId] = new NetworkGameObject(parsedData.prefabReferenceName, positionVector, rotationVector);
-
-        if (chosenNetworkId === objectIdCount) objectIdCount++;
-        else adjustObjectIdCounter();
     });
 
     socket.on("sendJump", (data) => {
@@ -166,6 +164,11 @@ io.on("connection", (socket) => {
     });
 
     socket.on("respawnSelf", (data) => {
+
+        if (networkObjectMap.length == 0) {
+            socket.emit("sendPersonalNetworkMap", "");
+        }
+
         console.log("Respawning client on network")
 
         const parsedData = JSON.parse(data);
@@ -240,7 +243,36 @@ io.on("connection", (socket) => {
 
         printNetworkObjectMap();
 
-        console.log("Finished reconnection code");
+        console.log("Finished reconnection code; Connected Users: "+ connectedUsers);
+    });
+
+    socket.on("updateNetworkMapFromClient", (data) => {
+        console.log("Updating network map");
+
+        const parsedData = JSON.parse(data);
+
+        let newNetworkMapTemp = {};
+        let objectsToSpawn = {};
+        let objectsToDelete = [];
+
+        for (let id in parsedData) {
+            let positionVector = {
+                x: parsedData[id].positionVector.x,
+                y: parsedData[id].positionVector.y,
+                z: parsedData[id].positionVector.z
+            };
+            let rotationVector = {
+                x: parsedData[id].rotationVector.x,
+                y: parsedData[id].rotationVector.y,
+                z: parsedData[id].rotationVector.z
+            }
+
+            newNetworkMapTemp[id] = new NetworkGameObject(parsedData[id].prefabName, positionVector, rotationVector);
+        }
+
+        networkObjectMap = newNetworkMapTemp;
+
+        socket.broadcast.emit("correctObjectMap", JSON.stringify(networkObjectMap));
     });
 
     // Updates positions of objects client side and server side
@@ -351,10 +383,9 @@ io.on("connection", (socket) => {
 
 function disconnectClient(socket, data) {
     connectedUsers--;
+    console.log("Connected Users: "+ connectedUsers);
 
     const parsedData = JSON.parse(data);
-
-    console.log(data);
 
     socket.broadcast.emit("deleteObject",
         {
@@ -484,14 +515,6 @@ function printNetworkObjectMap() {
     for (const key in networkObjectMap) {
         console.log(key +": "+ networkObjectMap[key].prefabName);
     }
-}
-
-function findNumberOfPlayerObjectsInScene() {
-    let count = 0;
-    for (const key in networkObjectMap) {
-        if (networkObjectMap[key].prefabName === "Player") count++;
-    }
-    return count;
 }
 
 class NetworkGameObject {
