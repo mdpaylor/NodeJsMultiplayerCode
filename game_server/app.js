@@ -81,6 +81,20 @@ io.on("connection", (socket) => {
         else adjustObjectIdCounter();
     });
 
+    socket.on("refreshConnection", (data) =>{
+        console.log("Refreshing connection");
+
+        delete userSocketIdMap[socket.id];
+    });
+
+    socket.on("setPersonalIds", (data) => {
+        console.log("Setting Personal IDs");
+
+        const parsedData = JSON.parse(data);
+
+        userSocketIdMap[socket.id] = new UserObject(parsedData.userNetworkId, parsedData.objectNetworkId);
+    });
+
     socket.on("idCorrection", (data) => {
         console.log("Correcting ID");
         const parsedData = JSON.parse(data);
@@ -358,7 +372,7 @@ io.on("connection", (socket) => {
     socket.on("disconnect", () => {
         console.log("Player has disconnected");
 
-        if (socket.id in userSocketIdMap) {
+        if (userSocketIdMap.hasOwnProperty(socket.id)) {
             let userObject = userSocketIdMap[socket.id];
             let json = {
                 "objectNetworkId": userObject.objectNetworkId,
@@ -366,22 +380,13 @@ io.on("connection", (socket) => {
             };
 
             disconnectClient(socket, JSON.stringify(json));
-
-            delete userSocketIdMap[socket.id];
-        }
-
-        if (connectedUsers <= 0) {
-            objectIdCount = 0;
-            connectedUsers = 0;
-            userIdCounter = 1;
-            networkObjectMap = {};
-            userSocketIdMap = {};
-            networkHostId = -1;
         }
     });
 });
 
 function disconnectClient(socket, data) {
+    if (!userSocketIdMap.hasOwnProperty(socket.id )) return;
+
     connectedUsers--;
     console.log("Connected Users: "+ connectedUsers);
 
@@ -438,16 +443,18 @@ function disconnectClient(socket, data) {
                 isHost: true
             });
         }
-        else {
-            networkHostId = 1;
-            io.emit("setHost", {
-                userNetworkId: networkHostId,
-                isHost: true
-            })
-        }
     }
 
     delete userSocketIdMap[socket.id];
+
+    if (connectedUsers <= 0) {
+        objectIdCount = 0;
+        connectedUsers = 0;
+        userIdCounter = 1;
+        networkObjectMap = {};
+        userSocketIdMap = {};
+        networkHostId = -1;
+    }
 
     console.log("Finished disconnection code!");
 }
