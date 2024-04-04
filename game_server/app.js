@@ -3,6 +3,7 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const PriorityQueue = require('priorityqueuejs');
+const e = require("express");
 
 let availableUserIdQueue = new PriorityQueue((a, b) => a - b);
 let availableObjectIdQueue = new PriorityQueue((a, b) => a - b);
@@ -135,6 +136,11 @@ io.on("connection", (socket) => {
             socket.broadcast.emit("deleteObject", {
                 id: parsedData.id
             });
+
+            if (networkObjectMap.hasOwnProperty(parsedData.id)) {
+                delete networkObjectMap[parsedData.id];
+            }
+
         } catch (Exception) {}
     });
 
@@ -387,7 +393,7 @@ io.on("connection", (socket) => {
 });
 
 function disconnectClient(socket, data) {
-    console.log("Disconnection ID"+ socket.id);
+    console.log("Disconnection ID: "+ socket.id);
     if (!userSocketIdMap.hasOwnProperty(socket.id)) {
         console.log("Did not find ID for disconnection");
         return;
