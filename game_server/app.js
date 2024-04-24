@@ -110,22 +110,6 @@ io.on("connection", (socket) => {
                 previousId: parsedData.previousId,
                 newId: parsedData.newId
             });
-            //}
-            /*            else if (findNumberOfPlayerObjectsInScene()+1 > connectedUsers) {
-                            socket.emit("deleteObject",
-                                {
-                                    id: parsedData.newId
-                                });
-                        }
-                        else {
-                            io.emit("spawnObject", {
-                                senderId: parsedData.senderId,
-                                networkId: parsedData.newId,
-                                prefabReferenceName: parsedData.type,
-                                position: parsedData.position,
-                                rotation: parsedData.rotation
-                            });
-                        }*/
         }
     });
 
@@ -264,6 +248,18 @@ io.on("connection", (socket) => {
 
     socket.on("updateAIThatTookDamage", (data) => {
         socket.broadcast.emit("updateAIThatTookDamage", {
+            data: data
+        });
+    });
+
+    socket.on("updateChangedAnimations", (data) =>{
+        socket.broadcast.emit("updateChangedAnimations", {
+            data: data
+        });
+    });
+
+    socket.on("updateChangedParticles", (data) =>{
+        socket.broadcast.emit("updateChangedAnimations", {
             data: data
         });
     });
