@@ -5,8 +5,8 @@ const io = require('socket.io')(http);
 const PriorityQueue = require('priorityqueuejs');
 const e = require("express");
 
-let availableUserIdQueue = new PriorityQueue((a, b) => a - b);
-let availableObjectIdQueue = new PriorityQueue((a, b) => a - b);
+let availableUserIdQueue = new PriorityQueue((a, b) => b-a);
+let availableObjectIdQueue = new PriorityQueue((a, b) => b-a);
 
 let objectIdCount = 0;
 let connectedUsers = 0;
@@ -27,8 +27,8 @@ io.on("connection", (socket) => {
         console.log("Player has connected. Connected Users: "+ connectedUsers);
 
         if (connectedUsers <= 1) {
-            availableUserIdQueue = new PriorityQueue((a,b) => a-b);
-            availableObjectIdQueue = new PriorityQueue((a,b) => a-b);
+            availableUserIdQueue = new PriorityQueue((a,b) => b-a);
+            availableObjectIdQueue = new PriorityQueue((a,b) => b-a);
             networkObjectMap = {};
             userSocketIdMap = {}
             networkHostId = -1;
@@ -64,7 +64,7 @@ io.on("connection", (socket) => {
                 });
 
             socket.emit("spawnScene", JSON.stringify(networkObjectMap));
-            console.log("spawning scene");
+            console.log("Spawning Scene");
             printNetworkObjectMap();
         }
 
@@ -79,7 +79,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("refreshConnection", (data) =>{
-        console.log("Refreshing connection");
+        console.log("Refreshing Connection");
 
         delete userSocketIdMap[socket.id];
 
@@ -252,14 +252,14 @@ io.on("connection", (socket) => {
         });
     });
 
-    socket.on("updateChangedAnimations", (data) =>{
+    socket.on("updateChangedAnimations", (data) => {
         socket.broadcast.emit("updateChangedAnimations", {
             data: data
         });
     });
 
-    socket.on("updateChangedParticles", (data) =>{
-        socket.broadcast.emit("updateChangedAnimations", {
+    socket.on("updateChangedParticles", (data) => {
+        socket.broadcast.emit("updateChangedParticles", {
             data: data
         });
     });
@@ -327,21 +327,11 @@ function disconnectClient(socket, data) {
         delete networkObjectMap[parsedData.objectNetworkId];
     }
 
-    if (Number(parsedData.senderId) === userIdCounter-1) {
-        userIdCounter--;
-        adjustUserIdCounter();
-    }
-    else {
-        availableUserIdQueue.enq(Number(parsedData.senderId));
-    }
+    availableUserIdQueue.enq(Number(parsedData.senderId));
+    adjustUserIdCounter();
 
-    if (Number(parsedData.objectNetworkId) === objectIdCount-1) {
-        objectIdCount--;
-        adjustObjectIdCounter();
-    }
-    else {
-        availableObjectIdQueue.enq(Number(parsedData.objectNetworkId));
-    }
+    availableObjectIdQueue.enq(Number(parsedData.objectNetworkId));
+    adjustObjectIdCounter();
 
     if (userSocketIdMap.hasOwnProperty(socket.id)) {
         delete userSocketIdMap[socket.id];
@@ -386,63 +376,17 @@ function disconnectClient(socket, data) {
 
 
 function adjustObjectIdCounter() {
-    if (availableObjectIdQueue.isEmpty()) return;
-
-    let redo = true;
-    let parentQueue = availableObjectIdQueue;
-    let tmpQueue = new PriorityQueue((a, b) => a - b);
-    while (redo) {
-        redo = false;
-
-        while (!parentQueue.isEmpty()) {
-            let val = parentQueue.deq();
-            if (val === objectIdCount) {
-                objectIdCount--;
-
-                delete networkObjectMap[val];
-
-                redo = true;
-            }
-            else {
-                tmpQueue.enq(val);
-            }
-        }
-
-        if (redo) {
-            parentQueue = tmpQueue;
-            tmpQueue = new PriorityQueue((a, b) => a - b);
-        }
+    while (!availableObjectIdQueue.isEmpty() && availableObjectIdQueue.peek() === objectIdCount-1){
+        objectIdCount--;
+        availableObjectIdQueue.deq();
     }
-
-    availableObjectIdQueue = tmpQueue;
 }
 
 function adjustUserIdCounter() {
-    if (availableUserIdQueue.isEmpty()) return;
-
-    let redo = true;
-    let parentQueue = availableUserIdQueue;
-    let tmpQueue = new PriorityQueue((a, b) => a - b);
-    while (redo) {
-        redo = false;
-
-        while (!parentQueue.isEmpty()) {
-            let val = parentQueue.deq();
-            if (val === userIdCounter) {
-                userIdCounter--;
-                redo = true;
-            }
-            else {
-                tmpQueue.enq(val);
-            }
-        }
-
-        if (redo) {
-            parentQueue = tmpQueue;
-            tmpQueue = new PriorityQueue((a, b) => a - b);
-        }
+    while (!availableUserIdQueue.isEmpty() && availableUserIdQueue.peek() === userIdCounter) {
+        userIdCounter--;
+        availableUserIdQueue.deq();
     }
-    availableUserIdQueue = tmpQueue;
 }
 
 function playerObjectHasMatchingSocket(objectId, senderId) {
