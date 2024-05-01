@@ -54,13 +54,15 @@ io.on("connection", (socket) => {
         });
 
         if (userIdCounter > 1) {
-            socket.broadcast.emit("spawnObject",
+            socket.broadcast.emit("spawnObjects",
                 {
                     senderId: chosenUserId,
-                    networkId: chosenNetworkId,
-                    prefabReferenceName: "Player",
-                    position: {x:-0.04657826, y:4.768372e-07, z:-0.07017983},
-                    rotation: {x:0, y:180, z:0}
+                    list: [{
+                        networkId: chosenNetworkId,
+                        prefabReferenceName: "Player",
+                        position: {x:-0.04657826, y:4.768372e-07, z:-0.07017983},
+                        rotation: {x:0, y:180, z:0}
+                    }]
                 });
 
             socket.emit("spawnScene", JSON.stringify(networkObjectMap));
@@ -128,28 +130,34 @@ io.on("connection", (socket) => {
         } catch (Exception) {}
     });
 
-    socket.on("spawnObject", (data) => {
-        console.log("Spawning Network Object")
+    socket.on("spawnObjects", (data) => {
         const parsedData = JSON.parse(data);
 
-        let chosenNetworkId = objectIdCount;
-        if (!availableObjectIdQueue.isEmpty()) chosenNetworkId = availableObjectIdQueue.deq();
-        else objectIdCount++;
+        let listToSend = [];
+        for (let objectReference of parsedData.list) {
+            let chosenNetworkId = objectIdCount;
+            if (!availableObjectIdQueue.isEmpty()) chosenNetworkId = availableObjectIdQueue.deq();
+            else objectIdCount++;
 
-        io.emit("spawnObject",
-            {
-                senderId: parsedData.senderId,
+            listToSend.push({
                 networkId: chosenNetworkId,
-                prefabReferenceName: parsedData.prefabReferenceName,
-                position: parsedData.position,
-                rotation: parsedData.rotation
+                prefabReferenceName: objectReference.prefabReferenceName,
+                position: objectReference.position,
+                rotation: objectReference.rotation
             });
 
-        let positionJson = parsedData.position;
-        let rotationJson = parsedData.rotation;
-        let positionVector = {x:positionJson.x, y:positionJson.y, z:positionJson.z};
-        let rotationVector = {x:rotationJson.x, y:rotationJson.y, z:rotationJson.z};
-        networkObjectMap[chosenNetworkId] = new NetworkGameObject(parsedData.prefabReferenceName, positionVector, rotationVector);
+            let positionJson = objectReference.position;
+            let rotationJson = objectReference.rotation;
+            let positionVector = {x:positionJson.x, y:positionJson.y, z:positionJson.z};
+            let rotationVector = {x:rotationJson.x, y:rotationJson.y, z:rotationJson.z};
+            networkObjectMap[chosenNetworkId] = new NetworkGameObject(objectReference.prefabReferenceName, positionVector, rotationVector);
+        }
+
+        io.emit("spawnObjects",
+            {
+                senderId: parsedData.senderId,
+                list: listToSend
+            });
     });
 
     socket.on("sendJump", (data) => {
@@ -260,6 +268,24 @@ io.on("connection", (socket) => {
 
     socket.on("updateChangedParticles", (data) => {
         socket.broadcast.emit("updateChangedParticles", {
+            data: data
+        });
+    });
+
+    socket.on("sendPlayerDamage", (data) => {
+        socket.broadcast.emit("sendPlayerDamage", {
+            data: data
+        });
+    });
+
+    socket.on("killSelfOnNetwork", (data) => {
+        socket.broadcast.emit("killSelfOnNetwork", {
+            data: data
+        });
+    });
+
+    socket.on("changeWeapon", (data) => {
+        socket.broadcast.emit("changeWeapon", {
             data: data
         });
     });
