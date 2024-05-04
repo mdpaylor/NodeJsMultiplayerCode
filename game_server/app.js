@@ -297,7 +297,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("endGame", (data) => {
-        socket.broadcast.emit("endGame", "");
+        io.emit("endGame", "");
     });
 
     socket.on("reportStoppedPosition", (data) => {
