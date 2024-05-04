@@ -290,6 +290,16 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on("sendAudio", (data) => {
+        socket.broadcast.emit("sendAudio", {
+            data: data
+        });
+    });
+
+    socket.on("endGame", (data) => {
+        socket.broadcast.emit("endGame", "");
+    });
+
     socket.on("reportStoppedPosition", (data) => {
         const parsedData = JSON.parse(data);
 
